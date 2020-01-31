@@ -1,0 +1,8 @@
+This is Homework2
+The ReadFile.py is what part3 asked us to do.
+We read the file, and tested the out put
+
+
+The ParticleProperties is more hard, which we can read file through
+numpy, and make new array. And we can easily read the info we need
+And use astropy and numpy to calculate
