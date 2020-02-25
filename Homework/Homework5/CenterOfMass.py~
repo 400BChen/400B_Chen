@@ -1,0 +1,145 @@
+
+import numpy as np
+import astropy.units as u
+import astropy.table as tbl
+from ReadFile import Read
+
+
+
+class CenterOfMass:
+    def __init__(self, filename, ptype):
+
+        self.time, self.total, self.data = Read(filename)
+        #print(self.time)                                                                                              
+        self.index = np.where(self.data['type'] == ptype)
+
+        self.m = self.data['m'][self.index]
+        self.x = self.data['x'][self.index]
+        self.y = self.data['y'][self.index]
+        self.z = self.data['z'][self.index]
+        self.vx = self.data['vx'][self.index]
+        self.vy = self.data['vy'][self.index]
+        self.vz = self.data['vz'][self.index]
+
+
+
+    def COMdefine(self,a,b,c,m):
+
+        Acom = np.sum(a*m)/np.sum(m)
+        # ycomponent Center of mass                                                                                    
+        Bcom = np.sum(b*m)/np.sum(m)
+        # zcomponent                                                                                                   
+        Ccom = np.sum(c*m)/np.sum(m)
+        return Acom, Bcom, Ccom
+    
+    
+    def COM_P(self, delta):
+
+        XCOM, YCOM, ZCOM = self.COMdefine(self.x,self.y,self.z,self.m)
+        # compute the magnitude of the COM position vector.                                                            
+        RCOM = np.sqrt(XCOM**2 + YCOM**2 + ZCOM**2)
+
+        xNew = self.x - XCOM
+        yNew = self.y - YCOM
+        zNew = self.z - ZCOM
+        RNEW = np.sqrt(xNew**2.0 + yNew**2.0 +zNew**2.0)
+
+        # will re-start at half that radius (reduced radius)                                                           
+        RMAX = max(RNEW)/2.0
+        
+
+        CHANGE = 1000.0
+
+        
+        while (CHANGE > delta):
+          # select all particles within the reduced radius (starting from original x,y,z, m)                         
+            index2 = np.where(RNEW < RMAX)
+            x2 = self.x[index2]
+            y2 = self.y[index2]
+            z2 = self.z[index2]
+            m2 = self.m[index2]
+
+
+            XCOM2, YCOM2, ZCOM2 = self.COMdefine(x2,y2,z2,m2)
+            # compute the new 3D COM position                                                                          
+            RCOM2 = np.sqrt(XCOM2**2 + YCOM2**2 + ZCOM2**2)
+
+
+            CHANGE = np.abs(RCOM - RCOM2)
+
+            RMAX = RMAX/2.0
+            # check this.                                                                                              
+
+            xNew = self.x - XCOM2
+            yNew = self.y - YCOM2
+            zNew = self.z - ZCOM2
+            RNEW = np.sqrt(xNew**2 + yNew**2 + zNew**2)
+
+
+            XCOM = XCOM2
+            YCOM = YCOM2
+            ZCOM = ZCOM2
+            RCOM = RCOM2
+
+            COMP = [XCOM,YCOM,ZCOM]
+
+
+        return np.round(COMP,2)*u.kpc
+    
+    
+
+    def COM_V(self, COMX,COMY,COMZ):
+
+        RVMAX = 15.0*u.kpc
+
+
+        xV = self.x[:]*u.kpc - COMX
+        yV = self.y[:]*u.kpc - COMY
+        zV = self.z[:]*u.kpc - COMZ
+        RV = np.sqrt(xV**2 + yV**2 + zV**2)
+        
+
+        indexV = np.where(RV < RVMAX)
+
+
+        vxnew = self.vx[indexV]
+        vynew = self.vy[indexV]
+        vznew = self.vz[indexV]
+        mnew = self.m[indexV]
+
+
+        VXCOM, VYCOM, VZCOM = self.COMdefine(vxnew,vynew,vznew, mnew)
+
+
+        COMV = [VXCOM,VYCOM,VZCOM] 
+
+
+        return np.round(COMV,2)*u.km/u.s
+
+
+
+
+
+
+MW_COM = CenterOfMass("MW_000.txt", 2)
+M31_COM = CenterOfMass("M31_000.txt", 2)
+M33_COM = CenterOfMass("M33_000.txt", 2)
+
+
+
+# MW:   store the position and velocity COM                                                                            
+MW_COM_P = MWCOM.COM_P(0.1)
+MW_COM_V = MWCOM.COM_V(MW_COM_P[0],MW_COM_P[1],MW_COM_P[2])
+
+# M31:   store the position and velocity COM                                                                           
+M31_COM_P = M31COM.COM_P(0.1)
+M31_COM_V = M31COM.COM_V(M31_COM_P[0],M31_COM_P[1],M31_COM_P[2])
+
+
+# M33:   store the position and velocity COM                                                                           
+M33_COM_P = M33COM.COM_P(0.1)
+M33_COM_V = M33COM.COM_V(M33_COM_P[0],M33_COM_P[1],M33_COM_P[2])
+
+
+
+
